@@ -1,3 +1,4 @@
+
 # User Feedback System
 
 A beautiful, professional-grade feedback system built with React, Supabase, and TypeScript. Collect, manage, and visualize user feedback with ease.
@@ -14,6 +15,13 @@ Check out the live application here: [User Feedback System](https://user-feedbac
 - 📈 Feedback analytics with category breakdown and trends
 - 🔒 Secure data storage with Supabase and PostgreSQL
 - 🎨 Modern UI with Tailwind CSS
+
+## Admin Dashboard Access
+
+To access the admin dashboard, use the following credentials:
+
+- **Username**: `admin`
+- **Password**: `admin123`
 
 ## Tech Stack
 
