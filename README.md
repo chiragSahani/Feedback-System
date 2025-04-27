@@ -2,6 +2,10 @@
 
 A beautiful, professional-grade feedback system built with React, Supabase, and TypeScript. Collect, manage, and visualize user feedback with ease.
 
+## Deployed Link
+
+Check out the live application here: [User Feedback System](https://user-feedback-management.netlify.app/)
+
 ## Features
 
 - 💬 Feedback submission form with real-time validation
