@@ -1,8 +1,12 @@
 import React, { useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer 
+  PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  ScatterChart, Scatter, ZAxis, AreaChart, Area
 } from 'recharts';
+import { motion } from 'framer-motion';
+import AnimatedNumber from './AnimatedNumber';
 import { Feedback } from '../types/feedback';
 
 interface FeedbackAnalyticsProps {
@@ -100,13 +104,36 @@ const FeedbackAnalytics: React.FC<FeedbackAnalyticsProps> = ({ feedbackItems }) 
       
       return counts;
     });
+
+    // New analytics calculations
+    const hourlyDistribution = Array(24).fill(0);
+    feedbackItems.forEach(item => {
+      const hour = new Date(item.created_at).getHours();
+      hourlyDistribution[hour]++;
+    });
+
+    const hourlyData = hourlyDistribution.map((count, hour) => ({
+      hour: `${hour}:00`,
+      count
+    }));
+
+    // Sentiment analysis (mock data - replace with actual sentiment analysis)
+    const sentimentData = [
+      { subject: 'Positive', A: 120, fullMark: 150 },
+      { subject: 'Neutral', A: 98, fullMark: 150 },
+      { subject: 'Negative', A: 86, fullMark: 150 },
+      { subject: 'Urgent', A: 99, fullMark: 150 },
+      { subject: 'Actionable', A: 85, fullMark: 150 },
+    ];
     
     return {
       total,
       categoryData,
       topUsers,
       feedbackByDay,
-      categoryTrends
+      categoryTrends,
+      hourlyData,
+      sentimentData
     };
   }, [feedbackItems]);
   
@@ -131,14 +158,23 @@ const FeedbackAnalytics: React.FC<FeedbackAnalyticsProps> = ({ feedbackItems }) 
   }
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Feedback Card */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-8"
+    >
+      {/* Quick Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          className="bg-white rounded-xl shadow-sm p-6 border border-gray-200"
+        >
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Total Feedback</h3>
-          <div className="text-3xl font-bold text-blue-600">{analytics.total}</div>
-          <p className="text-sm text-gray-500 mt-1">Submissions received</p>
-        </div>
+          <div className="text-3xl font-bold text-blue-600">
+            <AnimatedNumber value={analytics.total} />
+          </div>
+        </motion.div>
         
         {/* Top Users Card */}
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
@@ -184,57 +220,111 @@ const FeedbackAnalytics: React.FC<FeedbackAnalyticsProps> = ({ feedbackItems }) 
           </div>
         </div>
       </div>
+
+      {/* Advanced Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Hourly Distribution */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-white rounded-xl shadow-sm p-6 border border-gray-200"
+        >
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Hourly Distribution</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={analytics.hourlyData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="hour" />
+                <YAxis />
+                <Tooltip />
+                <Area 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke="#3B82F6" 
+                  fill="#93C5FD" 
+                  fillOpacity={0.3}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Sentiment Analysis Radar */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-white rounded-xl shadow-sm p-6 border border-gray-200"
+        >
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Feedback Analysis</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={analytics.sentimentData}>
+                <PolarGrid />
+                <PolarAngleAxis dataKey="subject" />
+                <PolarRadiusAxis />
+                <Radar
+                  name="Feedback"
+                  dataKey="A"
+                  stroke="#8B5CF6"
+                  fill="#C4B5FD"
+                  fillOpacity={0.6}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Feedback Trends */}
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Feedback Trends</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={analytics.categoryTrends}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="Bug Reports" 
+                  stroke={COLORS.bug_report} 
+                  strokeWidth={2}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Feature Requests" 
+                  stroke={COLORS.feature_request} 
+                  strokeWidth={2}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Suggestions" 
+                  stroke={COLORS.suggestion} 
+                  strokeWidth={2}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       
-      {/* Feedback Trends */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Feedback Trends</h3>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={analytics.categoryTrends}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="Bug Reports" 
-                stroke={COLORS.bug_report} 
-                strokeWidth={2}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="Feature Requests" 
-                stroke={COLORS.feature_request} 
-                strokeWidth={2}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="Suggestions" 
-                stroke={COLORS.suggestion} 
-                strokeWidth={2}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        {/* Daily Submissions */}
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Submissions</h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={analytics.feedbackByDay}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
-      
-      {/* Daily Submissions */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Submissions</h3>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={analytics.feedbackByDay}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
+    </motion.div>
   );
 };
 
