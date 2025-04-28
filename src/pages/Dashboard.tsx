@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
-  ArrowLeft, Search, Filter, RefreshCcw, BarChart, Download, 
-  Calendar, Users, MessageSquare, TrendingUp, Bell, FileText,
+  ArrowLeft, Search, Filter, RefreshCcw, Download, 
+  Calendar, Users, MessageSquare, TrendingUp, Bell,
   ChevronDown, AlertTriangle, CheckCircle
 } from 'lucide-react';
 import { supabase } from '../App';
@@ -24,13 +25,8 @@ const Dashboard: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [showAnalytics, setShowAnalytics] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>({
-    start: new Date(new Date().setDate(new Date().getDate() - 30)),
-    end: new Date()
-  });
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<Notification[]>([
     {
@@ -49,7 +45,6 @@ const Dashboard: React.FC = () => {
 
   const itemsPerPage = 5;
 
-  // Real-time subscription
   useEffect(() => {
     const subscription = supabase
       .channel('feedback_changes')
@@ -97,15 +92,8 @@ const Dashboard: React.FC = () => {
     fetchFeedback();
   }, []);
 
-  // Apply Filters, Search, and Sort
   useEffect(() => {
     let result = [...feedbackItems];
-
-    // Date range filter
-    result = result.filter(item => {
-      const itemDate = new Date(item.created_at);
-      return itemDate >= dateRange.start && itemDate <= dateRange.end;
-    });
 
     if (selectedCategory !== 'all') {
       result = result.filter(item => item.category === selectedCategory);
@@ -120,33 +108,15 @@ const Dashboard: React.FC = () => {
       );
     }
 
-    result.sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-    });
-
     setFilteredItems(result);
     setCurrentPage(1);
-  }, [feedbackItems, selectedCategory, searchTerm, sortOrder, dateRange]);
+  }, [feedbackItems, selectedCategory, searchTerm]);
 
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
   const paginatedItems = filteredItems.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
-
-  // Quick Stats
-  const stats = {
-    total: feedbackItems.length,
-    recent: feedbackItems.filter(item => 
-      new Date(item.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
-    ).length,
-    categories: feedbackItems.reduce((acc, item) => {
-      acc[item.category] = (acc[item.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>)
-  };
 
   const exportData = () => {
     const csvContent = [
@@ -170,229 +140,118 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-dashboard-bg text-dashboard-text">
       {/* Top Navigation Bar */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      <motion.nav 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-dashboard-card backdrop-blur-xl border-b border-white/10"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link to="/" className="text-gray-700 hover:text-gray-900 font-medium flex items-center">
+              <Link to="/" className="text-dashboard-text hover:text-white font-medium flex items-center">
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Home
               </Link>
             </div>
             <div className="flex items-center space-x-4">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 text-gray-600 hover:text-gray-900"
+                className="relative p-2 text-dashboard-text hover:text-white"
               >
                 <Bell className="w-6 h-6" />
                 {notifications.length > 0 && (
-                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 transform translate-x-1/2 -translate-y-1/2"></span>
+                  <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-dashboard-accent"></span>
                 )}
-              </button>
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 top-16">
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Notifications</h3>
-                    <div className="space-y-4">
-                      {notifications.map(notification => (
-                        <div key={notification.id} className="flex items-start space-x-3">
-                          {notification.type === 'info' && <Bell className="w-5 h-5 text-blue-500" />}
-                          {notification.type === 'warning' && <AlertTriangle className="w-5 h-5 text-yellow-500" />}
-                          {notification.type === 'success' && <CheckCircle className="w-5 h-5 text-green-500" />}
-                          <div>
-                            <p className="text-sm text-gray-900">{notification.message}</p>
-                            <p className="text-xs text-gray-500">
-                              {format(notification.timestamp, 'MMM d, yyyy HH:mm')}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
+              </motion.button>
             </div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-blue-100 rounded-full">
-                <MessageSquare className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Feedback</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.total}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-green-100 rounded-full">
-                <TrendingUp className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Last 24 Hours</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.recent}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-purple-100 rounded-full">
-                <Users className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Unique Users</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {new Set(feedbackItems.map(item => item.email)).size}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 rounded-full">
-                <FileText className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Categories</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {Object.keys(stats.categories).length}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Analytics Toggle & Export */}
-        <div className="flex justify-between items-center mb-6">
-          <button
-            onClick={() => setShowAnalytics(prev => !prev)}
-            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-all"
-          >
-            <BarChart className="w-5 h-5" />
-            {showAnalytics ? 'Hide Analytics' : 'Show Analytics'}
-          </button>
-          <button
-            onClick={exportData}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all"
-          >
-            <Download className="w-5 h-5" />
-            Export Data
-          </button>
-        </div>
-
-        {/* Analytics Section */}
-        {showAnalytics && (
-          <div className="mb-8">
-            <FeedbackAnalytics feedbackItems={feedbackItems} />
-          </div>
-        )}
-
-        {/* Filters & Search Section */}
-        <div className="bg-white p-6 rounded-lg shadow mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search */}
+        {/* Search and Filters */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-wrap gap-4 mb-8"
+        >
+          <div className="flex-1 min-w-[200px]">
             <div className="relative">
-              <Search className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-dashboard-text-light" />
               <input
                 type="text"
-                placeholder="Search..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Search feedback..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-dashboard-card border border-white/10 rounded-xl text-dashboard-text placeholder-dashboard-text-light focus:outline-none focus:ring-2 focus:ring-dashboard-accent"
               />
             </div>
-
-            {/* Category Filter */}
-            <div className="relative">
-              <Filter className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400" />
-              <select
-                className="w-full pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                <option value="suggestion">Suggestions</option>
-                <option value="bug_report">Bug Reports</option>
-                <option value="feature_request">Feature Requests</option>
-              </select>
-              <ChevronDown className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-400" />
-            </div>
-
-            {/* Date Range */}
-            <div className="relative">
-              <Calendar className="absolute top-1/2 left-3 transform -translate-y-1/2 text-gray-400" />
-              <input
-                type="date"
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={format(dateRange.start, 'yyyy-MM-dd')}
-                onChange={(e) => setDateRange(prev => ({ ...prev, start: new Date(e.target.value) }))}
-              />
-            </div>
-
-            {/* Sort Order */}
-            <button
-              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-all"
-            >
-              {sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}
-            </button>
           </div>
+          
+          <motion.select
+            whileHover={{ scale: 1.02 }}
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="bg-dashboard-card border border-white/10 rounded-xl px-4 py-2 text-dashboard-text focus:outline-none focus:ring-2 focus:ring-dashboard-accent"
+          >
+            <option value="all">All Categories</option>
+            <option value="bug_report">Bug Reports</option>
+            <option value="feature_request">Feature Requests</option>
+            <option value="suggestion">Suggestions</option>
+          </motion.select>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={exportData}
+            className="bg-dashboard-accent hover:bg-dashboard-accent-light text-white rounded-xl px-6 py-2 flex items-center space-x-2 transition-colors"
+          >
+            <Download className="w-5 h-5" />
+            <span>Export</span>
+          </motion.button>
+        </motion.div>
+
+        {/* Main Content */}
+        <div className="space-y-8">
+          <FeedbackAnalytics feedbackItems={feedbackItems} />
+          <FeedbackList feedbackItems={paginatedItems} isLoading={isLoading} />
         </div>
 
-        {/* Feedback List */}
-        <FeedbackList feedbackItems={paginatedItems} isLoading={isLoading} />
-
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center space-x-4 mt-8">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-lg ${
-                currentPage === 1 
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-              }`}
-            >
-              Previous
-            </button>
-            <div className="flex items-center space-x-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded-lg ${
-                    currentPage === page
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-lg ${
-                currentPage === totalPages
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
-              }`}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="flex justify-center mt-8 space-x-4"
+        >
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 bg-dashboard-card border border-white/10 rounded-xl disabled:opacity-50"
+          >
+            Previous
+          </motion.button>
+          
+          <span className="px-4 py-2 bg-dashboard-card border border-white/10 rounded-xl">
+            {currentPage} of {totalPages}
+          </span>
+          
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 bg-dashboard-card border border-white/10 rounded-xl disabled:opacity-50"
+          >
+            Next
+          </motion.button>
+        </motion.div>
       </div>
     </div>
   );
