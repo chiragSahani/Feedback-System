@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare, Mail, Calendar, ChevronDown, ChevronUp, Tag, ExternalLink } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Feedback } from '../types/feedback';
 
 interface FeedbackItemProps {
@@ -10,7 +11,6 @@ interface FeedbackItemProps {
 const FeedbackItem: React.FC<FeedbackItemProps> = ({ feedback }) => {
   const [expanded, setExpanded] = useState(false);
   
-  // Format the timestamp
   const formattedDate = formatDistanceToNow(new Date(feedback.created_at), { addSuffix: true });
   const exactDate = new Date(feedback.created_at).toLocaleString('en-US', {
     weekday: 'long',
@@ -21,20 +21,18 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ feedback }) => {
     minute: '2-digit'
   });
   
-  // Get the category badge color
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'bug_report':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-900/30 text-red-400 border-red-500/30';
       case 'feature_request':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-purple-900/30 text-purple-400 border-purple-500/30';
       case 'suggestion':
       default:
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-900/30 text-blue-400 border-blue-500/30';
     }
   };
   
-  // Format category name for display
   const formatCategory = (category: string) => {
     switch (category) {
       case 'bug_report':
@@ -49,20 +47,22 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ feedback }) => {
   };
 
   return (
-    <div 
+    <motion.div 
       className={`
-        border rounded-xl transition-all duration-300 ease-in-out
-        ${expanded ? 'bg-blue-50 border-blue-200 shadow-md' : 'bg-white border-gray-200 hover:border-blue-200 hover:shadow-sm'}
+        bg-dashboard-card backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden
+        transition-all duration-300 ease-in-out
+        ${expanded ? 'shadow-lg shadow-dashboard-accent/10' : 'hover:shadow-md hover:shadow-dashboard-accent/5'}
       `}
+      whileHover={{ scale: 1.01 }}
     >
       <div className="p-6">
         <div className="sm:flex sm:justify-between sm:items-start">
           <div className="flex-grow">
             <div className="flex items-center flex-wrap gap-2">
-              <h3 className="text-lg font-medium text-gray-900">{feedback.user_name}</h3>
+              <h3 className="text-lg font-medium text-dashboard-text">{feedback.user_name}</h3>
               <span 
                 className={`
-                  inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border
+                  inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border
                   ${getCategoryColor(feedback.category)}
                 `}
               >
@@ -71,7 +71,7 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ feedback }) => {
               </span>
             </div>
             
-            <div className="mt-2 text-sm text-gray-500 space-y-1">
+            <div className="mt-2 text-sm text-dashboard-text-light space-y-1">
               <div className="flex items-center">
                 <Mail className="h-4 w-4 mr-1.5" />
                 <span>{feedback.email}</span>
@@ -87,16 +87,18 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ feedback }) => {
           </div>
           
           <div className="mt-4 sm:mt-0 sm:ml-4">
-            <button
+            <motion.button
               onClick={() => setExpanded(!expanded)}
               className={`
-                inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium
-                transition-all duration-200 ease-in-out
+                inline-flex items-center px-4 py-2 rounded-xl text-sm font-medium
+                transition-all duration-200 ease-in-out border
                 ${expanded
-                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-dashboard-accent/20 text-dashboard-accent border-dashboard-accent/30'
+                  : 'bg-white/5 text-dashboard-text border-white/10 hover:bg-white/10'
                 }
               `}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               {expanded ? (
                 <>
@@ -109,51 +111,65 @@ const FeedbackItem: React.FC<FeedbackItemProps> = ({ feedback }) => {
                   View Details
                 </>
               )}
-            </button>
+            </motion.button>
           </div>
         </div>
         
-        <div 
-          className={`
-            mt-4 transition-all duration-300 ease-in-out overflow-hidden
-            ${expanded ? 'max-h-[500px] opacity-100' : 'max-h-[3em] opacity-90 line-clamp-2'}
-          `}
-        >
-          <div className="flex items-start">
-            <MessageSquare className="h-5 w-5 text-gray-400 mt-0.5 mr-2 flex-shrink-0" />
-            <div className="flex-grow">
-              <p className="text-gray-800 whitespace-pre-line">{feedback.feedback_text}</p>
-              
-              {expanded && (
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <h4 className="text-sm font-medium text-gray-900 mb-2">Additional Information</h4>
-                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                    <div>
-                      <dt className="text-gray-500">Submission ID</dt>
-                      <dd className="text-gray-900 font-mono mt-1">{feedback.id.slice(0, 8)}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-gray-500">Exact Time</dt>
-                      <dd className="text-gray-900 mt-1">{exactDate}</dd>
-                    </div>
-                  </dl>
+        <AnimatePresence>
+          {expanded ? (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="mt-4"
+            >
+              <div className="flex items-start">
+                <MessageSquare className="h-5 w-5 text-dashboard-text-light mt-0.5 mr-2 flex-shrink-0" />
+                <div className="flex-grow">
+                  <p className="text-dashboard-text whitespace-pre-line">{feedback.feedback_text}</p>
+                  
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <h4 className="text-sm font-medium text-dashboard-text mb-2">Additional Information</h4>
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div>
+                        <dt className="text-dashboard-text-light">Submission ID</dt>
+                        <dd className="text-dashboard-text font-mono mt-1">{feedback.id.slice(0, 8)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-dashboard-text-light">Exact Time</dt>
+                        <dd className="text-dashboard-text mt-1">{exactDate}</dd>
+                      </div>
+                    </dl>
+                  </div>
                 </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              initial={{ height: 'auto' }}
+              className="mt-4 overflow-hidden"
+            >
+              <div className="flex items-start">
+                <MessageSquare className="h-5 w-5 text-dashboard-text-light mt-0.5 mr-2 flex-shrink-0" />
+                <p className="text-dashboard-text line-clamp-2">{feedback.feedback_text}</p>
+              </div>
+              {feedback.feedback_text.length > 150 && (
+                <motion.button
+                  onClick={() => setExpanded(true)}
+                  className="mt-2 text-sm text-dashboard-accent hover:text-dashboard-accent-light inline-flex items-center"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Read more
+                </motion.button>
               )}
-            </div>
-          </div>
-        </div>
-        
-        {!expanded && feedback.feedback_text.length > 150 && (
-          <button
-            onClick={() => setExpanded(true)}
-            className="mt-2 text-sm text-blue-600 hover:text-blue-800 inline-flex items-center"
-          >
-            <ExternalLink className="h-4 w-4 mr-1" />
-            Read more
-          </button>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
